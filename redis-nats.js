@@ -3,12 +3,12 @@ const { connect, StringCodec } = require('nats');
 
 // Define the Redis stream, group, and consumer names
 const stream = 'stock-data-stream';
-const group = 'stock-data-group';
-const consumer = 'stock-data-consumer';
+const group = 'stock-data-group1';
+const consumer = 'stock-data-consumer1';
 
 // Create a Redis client with the correct connection settings
 const client = redis.createClient({
-  url: 'redis://:I3Linode@172.232.13.6:6379'
+  url: 'redis://:I3Linode@redis-apj.linode.eiler.rocks:6379'
 });
 
 // Handle Redis connection errors
@@ -102,4 +102,4 @@ async function subscribeToStream(natsConnection) {
   } catch (err) {
     console.error('Error in the subscription process:', err);
   }
-})(); 
+})();
