@@ -1,0 +1,19 @@
+{
+  "name": "node-redis-nats-app",
+  "version": "1.0.0",
+  "description": "A Node.js application that integrates with Redis and NATS",
+  "main": "index.js",
+  "scripts": {
+    "start": "node redis-nats.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "redis": "^4.6.7",
+    "nats": "^2.11.1"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
