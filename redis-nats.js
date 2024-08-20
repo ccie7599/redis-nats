@@ -1,8 +1,10 @@
 const redis = require('redis');
 const { connect, StringCodec } = require('nats');
 
-// Define the Redis stream name
+// Define the Redis stream, group, and consumer names
 const stream = 'stock-data-stream';
+const group = 'stock-data-group';
+const consumer = 'stock-data-consumer';
 
 // Create a Redis client with the correct connection settings
 const client = redis.createClient({
@@ -48,29 +50,41 @@ async function connectToNats() {
   }
 }
 
+// Create a Redis stream group if it doesn't exist
+async function createGroupIfNotExists() {
+  try {
+    await client.xGroupCreate(stream, group, '$', { MKSTREAM: true });
+    console.log(`Created Redis stream group: ${group}`);
+  } catch (err) {
+    if (err.code === 'BUSYGROUP') {
+      console.log(`Redis stream group ${group} already exists`);
+    } else {
+      console.error('Error creating Redis stream group:', err);
+    }
+  }
+}
+
 // Subscribe to the Redis stream
 async function subscribeToStream(natsConnection) {
+  await createGroupIfNotExists();
+
   console.log(`Subscribed to Redis stream: ${stream}`);
   while (true) {
     try {
-      const response = await client.xRead({
-        key: stream,
-        id: '0', // Start reading from the beginning of the stream
-        block: 5000, // Block for up to 5000 milliseconds waiting for new messages
-        count: 10 // Number of messages to read per call
-      });
+      const response = await client.xReadGroup(
+        group,
+        consumer,
+        [{ key: stream, id: '>' }],
+        { BLOCK: 5000 }
+      );
 
       if (response) {
         response.forEach(streamData => {
           streamData.messages.forEach(message => {
-            const data = {};
-            for (let i = 0; i < message.length; i += 2) {
-              data[message[i]] = message[i + 1];
-            }
-            console.log('Received message:', data);
+            console.log('Received message:', message);
 
             // Publish the message to NATS
-            await publishToNats(natsConnection, data);
+            publishToNats(natsConnection, message);
           });
         });
       }
@@ -88,4 +102,4 @@ async function subscribeToStream(natsConnection) {
   } catch (err) {
     console.error('Error in the subscription process:', err);
   }
-})();
+})(); 
