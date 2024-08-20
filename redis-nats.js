@@ -1,7 +1,7 @@
 const redis = require('redis');
 const { connect, StringCodec } = require('nats');
 
-// Define the Redis stream and consumer names
+// Define the Redis stream name
 const stream = 'stock-data-stream';
 
 // Create a Redis client with the correct connection settings
@@ -53,18 +53,24 @@ async function subscribeToStream(natsConnection) {
   console.log(`Subscribed to Redis stream: ${stream}`);
   while (true) {
     try {
-      const response = await client.xRead(
-        { key: stream, id: '>' },
-        { BLOCK: 5000 }
-      );
+      const response = await client.xRead({
+        key: stream,
+        id: '0', // Start reading from the beginning of the stream
+        block: 5000, // Block for up to 5000 milliseconds waiting for new messages
+        count: 10 // Number of messages to read per call
+      });
 
       if (response) {
         response.forEach(streamData => {
           streamData.messages.forEach(message => {
-            console.log('Received message:', message);
+            const data = {};
+            for (let i = 0; i < message.length; i += 2) {
+              data[message[i]] = message[i + 1];
+            }
+            console.log('Received message:', data);
 
             // Publish the message to NATS
-            publishToNats(natsConnection, message);
+            await publishToNats(natsConnection, data);
           });
         });
       }
