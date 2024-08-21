@@ -1,10 +1,8 @@
 const redis = require('redis');
 const { connect, StringCodec } = require('nats');
 
-// Define the Redis stream, group, and consumer names
+// Define the Redis stream name
 const stream = 'stock-data-stream';
-const group = 'stock-data-group1';
-const consumer = 'stock-data-consumer1';
 
 // Create a Redis client with the correct connection settings
 const client = redis.createClient({
@@ -50,31 +48,13 @@ async function connectToNats() {
   }
 }
 
-// Create a Redis stream group if it doesn't exist
-async function createGroupIfNotExists() {
-  try {
-    await client.xGroupCreate(stream, group, '$', { MKSTREAM: true });
-    console.log(`Created Redis stream group: ${group}`);
-  } catch (err) {
-    if (err.code === 'BUSYGROUP') {
-      console.log(`Redis stream group ${group} already exists`);
-    } else {
-      console.error('Error creating Redis stream group:', err);
-    }
-  }
-}
-
 // Subscribe to the Redis stream
 async function subscribeToStream(natsConnection) {
-  await createGroupIfNotExists();
-
   console.log(`Subscribed to Redis stream: ${stream}`);
   while (true) {
     try {
-      const response = await client.xReadGroup(
-        group,
-        consumer,
-        [{ key: stream, id: '>' }],
+      const response = await client.xRead(
+        [{ key: stream, id: '0' }],  // '0' to start from the beginning, use '>' to read new entries
         { BLOCK: 5000 }
       );
 
