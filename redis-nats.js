@@ -54,7 +54,7 @@ async function subscribeToStream(natsConnection) {
   while (true) {
     try {
       const response = await client.xRead(
-        [{ key: stream, id: '>' }],  // '0' to start from the beginning, use '>' to read new entries
+        [{ key: stream, id: '$' }],  // '0' to start from the beginning, use '>' to read new entries
         { BLOCK: 5000 }
       );
 
